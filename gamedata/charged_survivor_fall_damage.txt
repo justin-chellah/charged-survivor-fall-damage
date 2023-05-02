@@ -1,0 +1,14 @@
+"Games"
+{
+	"left4dead2"
+	{
+		"Offsets"
+		{
+			"CMultiplayRules::FlPlayerFallDamage"
+			{
+				"windows"	"58"
+				"linux"		"59"
+			}
+		}
+	}
+}
