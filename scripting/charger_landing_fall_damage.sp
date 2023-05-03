@@ -25,7 +25,7 @@ enum ZombieClassType
 ConVar fall_speed_fatal = null;
 ConVar fall_speed_safe = null;
 
-Handle g_hDHook_CMultiplayRules_FlPlayerFallDamage = null;
+DynamicHook g_hDHook_CMultiplayRules_FlPlayerFallDamage = null;
 
 ZombieClassType GetZombieClass( int iClient )
 {
@@ -41,28 +41,28 @@ float FallingDamageForSpeed( float flFallVelocity )
 public MRESReturn DHook_CMultiplayRules_FlPlayerFallDamage( Handle hParams )
 {
 	int iClient = DHookGetParam( hParams, 1 );
-	
+
 	if ( GetClientTeam( iClient ) == TEAM_ZOMBIE && GetZombieClass( iClient ) == Zombie_Charger )
-	{		
+	{
 		int iVictim = GetEntPropEnt( iClient, Prop_Send, "m_carryVictim" );
-		
+
 		if ( iVictim == INVALID_ENT_REFERENCE )
 		{
 			iVictim = GetEntPropEnt( iClient, Prop_Send, "m_pummelVictim" );
 		}
-		
+
 		if ( iVictim != INVALID_ENT_REFERENCE )
-		{			
+		{
 			float flFallDamage = FallingDamageForSpeed( GetEntPropFloat( iClient, Prop_Send, "m_flFallVelocity" ) );
-			
+
 			SDKHooks_TakeDamage( iVictim, 0/* = world */, iClient, flFallDamage, DMG_FALL );
-			
+
 			if ( flFallDamage > 0.0 )
 			{
 				const bool bForce = false;
-				
+
 				Event hEvent = CreateEvent( "player_falldamage", bForce );
-				
+
 				if ( hEvent )
 				{
 					hEvent.SetInt( "userid", GetClientUserId( iVictim ) );
@@ -73,13 +73,13 @@ public MRESReturn DHook_CMultiplayRules_FlPlayerFallDamage( Handle hParams )
 			}
 		}
 	}
-	
+
 	return MRES_Ignored;
 }
 
 public void OnMapStart()
 {
-	DHookGamerules( g_hDHook_CMultiplayRules_FlPlayerFallDamage, true );
+	g_hDHook_CMultiplayRules_FlPlayerFallDamage.HookGamerules( Hook_Pre, DHook_CMultiplayRules_FlPlayerFallDamage );
 }
 
 public void OnPluginStart()
@@ -87,29 +87,29 @@ public void OnPluginStart()
 	GameData hGameData = new GameData( GAMEDATA_FILE );
 
 	if ( hGameData == null )
-	{	
+	{
 		SetFailState( "Unable to load gamedata file \"" ... GAMEDATA_FILE ... "\"" );
 	}
 
 	int nOffset = hGameData.GetOffset( "CMultiplayRules::FlPlayerFallDamage" );
-	
+
 	if ( nOffset == -1 )
 	{
 		delete hGameData;
-		
+
 		SetFailState( "Unable to find gamedata offset entry for \"CMultiplayRules::FlPlayerFallDamage\"" );
 	}
-	
+
 	delete hGameData;
-	
+
 	fall_speed_fatal = FindConVar( "fall_speed_fatal" );
 	fall_speed_safe = FindConVar( "fall_speed_safe" );
 
-	g_hDHook_CMultiplayRules_FlPlayerFallDamage = DHookCreate( nOffset, HookType_GameRules, ReturnType_Void, ThisPointer_Ignore, DHook_CMultiplayRules_FlPlayerFallDamage );
-	DHookAddParam( g_hDHook_CMultiplayRules_FlPlayerFallDamage, HookParamType_CBaseEntity );
+	g_hDHook_CMultiplayRules_FlPlayerFallDamage = new DynamicHook( nOffset, HookType_GameRules, ReturnType_Void, ThisPointer_Ignore );
+	g_hDHook_CMultiplayRules_FlPlayerFallDamage.AddParam( HookParamType_CBaseEntity );
 }
 
-public Plugin myinfo = 
+public Plugin myinfo =
 {
 	name = "[L4D2] Charged Survivor Fall Damage",
 	author = "Justin \"Sir Jay\" Chellah",
